@@ -27,15 +27,20 @@ class FSMContext:
         # 4. [FSM-009] If storage retrieval fails, propagate the existing failure unchanged.
         return await self.storage.get_data(key=self.key)
 
-    # ARCHITECTURE: FSM-003, FSM-006, FSM-007, FSM-008
+    # ARCHITECTURE: FSM-003, FSM-004, FSM-005, FSM-006, FSM-007, FSM-008, FSM-009
     # Ownership: FSMContext owns single-value lookup semantics because the value is
     # selected from the context-facing data mapping, not by a storage-backend port.
     # Boundary: obtain that mapping through this class's get_data() operation so the
-    # existing BaseStorage retrieval contract remains the only persistence boundary.
+    # existing BaseStorage.get_data() retrieval contract remains the unchanged bulk
+    # persistence boundary (FSM-009).
     # Contract: use the caller's mapping-supported key unchanged and expose the
-    # mapping lookup's value or native KeyError without adaptation or fallback.
+    # mapping lookup's value or native KeyError without adaptation or fallback; the
+    # obtained mapping and the context's established state are read-only inputs to
+    # this operation (FSM-004, FSM-005).
     # Dependency: get_value depends inward on get_data; BaseStorage and its adapters
-    # must not depend on, duplicate, or specialize this context-level selection.
+    # must not depend on, duplicate, or specialize this context-level selection. No
+    # dependency edge from get_value to set_data(), update_data(), set_state(), or
+    # clear() belongs in this seam (FSM-004, FSM-005).
     # Integration seam: the concrete body below owns selection while the traceable
     # tests in tests/test_fsm/test_context.py own behavioral validation.
     async def get_value(self, key: Any) -> Any:
