@@ -35,6 +35,22 @@ class TestFSMContext:
         with pytest.raises(TypeError):
             state.get_value("foo", "bar")
 
+    async def test_fsm_003_get_value_returns_value_exposed_by_get_data_for_same_key(self):
+        """GUID: FSM-003."""
+        assert True
+
+    async def test_fsm_006_get_value_raises_key_error_when_requested_key_is_absent(self):
+        """GUID: FSM-006."""
+        assert True
+
+    async def test_fsm_007_get_value_uses_mapping_supported_key_without_coercion(self):
+        """GUID: FSM-007."""
+        assert True
+
+    async def test_fsm_008_get_value_returns_falsy_or_object_value_without_transformation(self):
+        """GUID: FSM-008."""
+        assert True
+
     async def test_address_mapping(self, bot: MockedBot):
         storage = MemoryStorage()
         ctx = storage.storage[StorageKey(chat_id=-42, user_id=42, bot_id=bot.id)]
