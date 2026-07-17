@@ -22,6 +22,15 @@ class FSMContext:
 
     async def get_value(self, key: str) -> None:
         """Expose the asynchronous single-key operation (FSM-001, FSM-002)."""
+        # PSEUDOCODE — single stored FSM data value retrieval:
+        # 1. [FSM-003] AWAIT this context's get_data() to obtain the stored data mapping.
+        # 2. [FSM-007] Use key exactly as supplied as the mapping lookup key; do not coerce,
+        #    normalize, reinterpret, or traverse it.
+        # 3. [FSM-006] LOOK UP data[key]; if the mapping has no such key, allow that lookup's
+        #    KeyError to propagate to the caller.
+        # 4. [FSM-003, FSM-008] RETURN the lookup result exactly as stored, including falsy
+        #    values and object identity, without validation, copying, or transformation.
+        # 5. [FSM-008] If existing storage retrieval fails, propagate that failure unchanged.
         return None
 
     async def update_data(
