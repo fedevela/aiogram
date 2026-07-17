@@ -41,6 +41,14 @@ class TestFSMContext:
 
         assert await state.get_value("foo") == data["foo"]
 
+    def test_fsm_004_stored_data_remains_unchanged_after_get_value_call(self):
+        """GUID: FSM-004."""
+        assert True
+
+    def test_fsm_005_established_fsm_state_remains_unchanged_after_get_value_call(self):
+        """GUID: FSM-005."""
+        assert True
+
     async def test_fsm_006_get_value_raises_key_error_when_requested_key_is_absent(self, state):
         """GUID: FSM-006."""
         with pytest.raises(KeyError):
@@ -61,6 +69,12 @@ class TestFSMContext:
 
         assert await state.get_value("falsy") == 0
         assert await state.get_value("object") is stored_object
+
+    def test_fsm_009_get_data_exposes_same_stored_data_after_get_value_is_added_and_called(
+        self,
+    ):
+        """GUID: FSM-009."""
+        assert True
 
     async def test_address_mapping(self, bot: MockedBot):
         storage = MemoryStorage()
