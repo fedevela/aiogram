@@ -41,13 +41,24 @@ class TestFSMContext:
 
         assert await state.get_value("foo") == data["foo"]
 
-    def test_fsm_004_stored_data_remains_unchanged_after_get_value_call(self):
+    async def test_fsm_004_stored_data_remains_unchanged_after_get_value_call(self, state):
         """GUID: FSM-004."""
-        assert True
+        data_before = await state.get_data()
 
-    def test_fsm_005_established_fsm_state_remains_unchanged_after_get_value_call(self):
+        await state.get_value("foo")
+
+        assert await state.get_data() == data_before
+
+    async def test_fsm_005_established_fsm_state_remains_unchanged_after_get_value_call(
+        self, state
+    ):
         """GUID: FSM-005."""
-        assert True
+        state_before = await state.get_state()
+        assert state_before == "test"
+
+        await state.get_value("foo")
+
+        assert await state.get_state() == state_before
 
     async def test_fsm_006_get_value_raises_key_error_when_requested_key_is_absent(self, state):
         """GUID: FSM-006."""
@@ -70,11 +81,16 @@ class TestFSMContext:
         assert await state.get_value("falsy") == 0
         assert await state.get_value("object") is stored_object
 
-    def test_fsm_009_get_data_exposes_same_stored_data_after_get_value_is_added_and_called(
-        self,
+    async def test_fsm_009_get_data_exposes_same_stored_data_after_get_value_is_added_and_called(
+        self, state
     ):
         """GUID: FSM-009."""
-        assert True
+        data_before = await state.get_data()
+
+        await state.get_value("foo")
+
+        assert data_before == {"foo": "bar"}
+        assert await state.get_data() == data_before
 
     async def test_address_mapping(self, bot: MockedBot):
         storage = MemoryStorage()
