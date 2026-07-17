@@ -1,3 +1,5 @@
+import inspect
+
 import pytest
 
 from aiogram.fsm.context import FSMContext
@@ -17,17 +19,21 @@ def state(bot: MockedBot):
 
 
 class TestFSMContext:
-    async def test_fsm_001_fsm_002_get_value_accepts_one_key_as_async_operation(self):
+    async def test_fsm_001_fsm_002_get_value_accepts_one_key_as_async_operation(self, state):
         """GUID: FSM-001, FSM-002."""
-        assert True
+        assert inspect.iscoroutinefunction(state.get_value)
 
-    async def test_fsm_002_get_value_rejects_invocation_without_key(self):
-        """GUID: FSM-002."""
-        assert True
+        await state.get_value("foo")
 
-    async def test_fsm_002_get_value_rejects_invocation_with_more_than_one_key(self):
+    async def test_fsm_002_get_value_rejects_invocation_without_key(self, state):
         """GUID: FSM-002."""
-        assert True
+        with pytest.raises(TypeError):
+            state.get_value()
+
+    async def test_fsm_002_get_value_rejects_invocation_with_more_than_one_key(self, state):
+        """GUID: FSM-002."""
+        with pytest.raises(TypeError):
+            state.get_value("foo", "bar")
 
     async def test_address_mapping(self, bot: MockedBot):
         storage = MemoryStorage()

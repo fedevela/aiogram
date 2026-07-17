@@ -20,28 +20,9 @@ class FSMContext:
     async def get_data(self) -> Dict[str, Any]:
         return await self.storage.get_data(key=self.key)
 
-    # ARCHITECTURE: FSM-001, FSM-002
-    # Ownership: FSMContext is the public boundary for the asynchronous get_value
-    # contract; place it with the context-facing data operations in this class.
-    # Contract: the eventual coroutine signature has one required `key` parameter
-    # after `self`, with no variadic positional parameters.
-    # Dependency: keep lookup behind FSMContext's existing BaseStorage dependency;
-    # these requirements add no storage API and define no lookup-result semantics.
-    # Integration seam: implementation belongs here, between get_data and update_data.
-
-    # GUID: FSM-001, FSM-002 - asynchronous single-key FSMContext API
-    # PSEUDOCODE: async def get_value(self, key):
-    #   INPUT: one required key identifying an entry in this context's stored data.
-    #   CALL CONTRACT:
-    #     - Expose get_value as a public coroutine operation on FSMContext.
-    #     - Require key in the operation signature; if omitted, reject the invocation
-    #       during argument binding before the coroutine body can execute.
-    #     - Declare no additional positional parameters or variadic arguments; if a
-    #       second key argument is supplied, reject it during argument binding.
-    #   TRANSITION: after exactly one key is bound, enter the asynchronous operation
-    #     and hand off lookup/result behavior to its separately specified obligation.
-    #   OUTPUT: an awaitable invocation; lookup results and missing-key behavior are
-    #     intentionally not defined by FSM-001 or FSM-002.
+    async def get_value(self, key: str) -> None:
+        """Expose the asynchronous single-key operation (FSM-001, FSM-002)."""
+        return None
 
     async def update_data(
         self, data: Optional[Dict[str, Any]] = None, **kwargs: Any
