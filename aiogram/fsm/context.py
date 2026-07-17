@@ -20,24 +20,10 @@ class FSMContext:
     async def get_data(self) -> Dict[str, Any]:
         return await self.storage.get_data(key=self.key)
 
-    # Architecture contract (FSMVAL-001..FSMVAL-005): FSMContext owns the public
-    # ``async get_value(key: str) -> Any`` convenience seam adjacent to get_data().
-    # Its sole read dependency is this existing get_data() boundary; BaseStorage and
-    # its backends gain no single-value operation. This placement preserves backend
-    # independence, mapping lookup semantics, and the non-mutating read boundary.
-
-    # Pseudocode contract: FSMVAL-001, FSMVAL-002, FSMVAL-003, FSMVAL-004, FSMVAL-005
-    # ASYNC FUNCTION get_value(key):
-    #     data = AWAIT get_data()                         # FSMVAL-001, FSMVAL-005
-    #     TRY:
-    #         value = data[key]                          # FSMVAL-002
-    #     CATCH KeyError:
-    #         PROPAGATE KeyError without a default       # FSMVAL-003
-    #         LEAVE stored FSM data unchanged            # FSMVAL-004 (failure path)
-    #     LEAVE stored FSM data unchanged                # FSMVAL-004 (success path)
-    #     RETURN value exactly as obtained from data     # FSMVAL-002
-    # END FUNCTION
-    # Preserve get_data() and its direct mapping-lookup semantics unchanged.  # FSMVAL-005
+    async def get_value(self, key: str) -> Any:
+        """Get a value from the current state data by key."""
+        data = await self.get_data()
+        return data[key]
 
     async def update_data(
         self, data: Optional[Dict[str, Any]] = None, **kwargs: Any
