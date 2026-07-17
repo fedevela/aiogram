@@ -29,9 +29,9 @@ class FSMContext:
     # mapping lookup's value or native KeyError without adaptation or fallback.
     # Dependency: get_value depends inward on get_data; BaseStorage and its adapters
     # must not depend on, duplicate, or specialize this context-level selection.
-    # Integration seam: replace only the inert body below during implementation;
-    # the traceable tests in tests/test_fsm/test_context.py own behavioral validation.
-    async def get_value(self, key: str) -> None:
+    # Integration seam: the concrete body below owns selection while the traceable
+    # tests in tests/test_fsm/test_context.py own behavioral validation.
+    async def get_value(self, key: Any) -> Any:
         """Expose the asynchronous single-key operation (FSM-001, FSM-002)."""
         # PSEUDOCODE — single stored FSM data value retrieval:
         # 1. [FSM-003] AWAIT this context's get_data() to obtain the stored data mapping.
@@ -42,7 +42,8 @@ class FSMContext:
         # 4. [FSM-003, FSM-008] RETURN the lookup result exactly as stored, including falsy
         #    values and object identity, without validation, copying, or transformation.
         # 5. [FSM-008] If existing storage retrieval fails, propagate that failure unchanged.
-        return None
+        data = await self.get_data()
+        return data[key]
 
     async def update_data(
         self, data: Optional[Dict[str, Any]] = None, **kwargs: Any

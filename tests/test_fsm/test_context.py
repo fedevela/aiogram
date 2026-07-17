@@ -35,21 +35,32 @@ class TestFSMContext:
         with pytest.raises(TypeError):
             state.get_value("foo", "bar")
 
-    async def test_fsm_003_get_value_returns_value_exposed_by_get_data_for_same_key(self):
+    async def test_fsm_003_get_value_returns_value_exposed_by_get_data_for_same_key(self, state):
         """GUID: FSM-003."""
-        assert True
+        data = await state.get_data()
 
-    async def test_fsm_006_get_value_raises_key_error_when_requested_key_is_absent(self):
+        assert await state.get_value("foo") == data["foo"]
+
+    async def test_fsm_006_get_value_raises_key_error_when_requested_key_is_absent(self, state):
         """GUID: FSM-006."""
-        assert True
+        with pytest.raises(KeyError):
+            await state.get_value("missing")
 
-    async def test_fsm_007_get_value_uses_mapping_supported_key_without_coercion(self):
+    async def test_fsm_007_get_value_uses_mapping_supported_key_without_coercion(self, state):
         """GUID: FSM-007."""
-        assert True
+        await state.set_data({1: "integer key", "1": "string key"})
 
-    async def test_fsm_008_get_value_returns_falsy_or_object_value_without_transformation(self):
+        assert await state.get_value(1) == "integer key"
+
+    async def test_fsm_008_get_value_returns_falsy_or_object_value_without_transformation(
+        self, state
+    ):
         """GUID: FSM-008."""
-        assert True
+        stored_object = object()
+        await state.set_data({"falsy": 0, "object": stored_object})
+
+        assert await state.get_value("falsy") == 0
+        assert await state.get_value("object") is stored_object
 
     async def test_address_mapping(self, bot: MockedBot):
         storage = MemoryStorage()
