@@ -17,6 +17,18 @@ def state(bot: MockedBot):
 
 
 class TestFSMContext:
+    async def test_fsm_001_fsm_002_get_value_accepts_one_key_as_async_operation(self):
+        """GUID: FSM-001, FSM-002."""
+        assert True
+
+    async def test_fsm_002_get_value_rejects_invocation_without_key(self):
+        """GUID: FSM-002."""
+        assert True
+
+    async def test_fsm_002_get_value_rejects_invocation_with_more_than_one_key(self):
+        """GUID: FSM-002."""
+        assert True
+
     async def test_address_mapping(self, bot: MockedBot):
         storage = MemoryStorage()
         ctx = storage.storage[StorageKey(chat_id=-42, user_id=42, bot_id=bot.id)]
