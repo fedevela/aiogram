@@ -20,6 +20,17 @@ class FSMContext:
     async def get_data(self) -> Dict[str, Any]:
         return await self.storage.get_data(key=self.key)
 
+    # ARCHITECTURE: FSM-003, FSM-006, FSM-007, FSM-008
+    # Ownership: FSMContext owns single-value lookup semantics because the value is
+    # selected from the context-facing data mapping, not by a storage-backend port.
+    # Boundary: obtain that mapping through this class's get_data() operation so the
+    # existing BaseStorage retrieval contract remains the only persistence boundary.
+    # Contract: use the caller's mapping-supported key unchanged and expose the
+    # mapping lookup's value or native KeyError without adaptation or fallback.
+    # Dependency: get_value depends inward on get_data; BaseStorage and its adapters
+    # must not depend on, duplicate, or specialize this context-level selection.
+    # Integration seam: replace only the inert body below during implementation;
+    # the traceable tests in tests/test_fsm/test_context.py own behavioral validation.
     async def get_value(self, key: str) -> None:
         """Expose the asynchronous single-key operation (FSM-001, FSM-002)."""
         # PSEUDOCODE — single stored FSM data value retrieval:
