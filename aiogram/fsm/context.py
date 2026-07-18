@@ -20,27 +20,10 @@ class FSMContext:
     async def get_data(self) -> Dict[str, Any]:
         return await self.storage.get_data(key=self.key)
 
-    # ARCHITECTURE — FSMContext owns the single-value read contract beside its
-    # existing bulk-data boundary.  [FSMGV-001, FSMGV-002, FSMGV-008]
-    # Dependency direction remains FSMContext -> get_data() -> BaseStorage;
-    # storage backends gain no selective-read port or implementation.  [FSMGV-003]
-    # The mapping returned by get_data() remains the lookup authority, preserving
-    # its read-only key, missing-key, and value semantics.
-    # [FSMGV-004, FSMGV-005, FSMGV-006, FSMGV-007]
-
-    # PSEUDOCODE — FSMContext single-value lookup
-    #
-    # ASYNC PROCEDURE get_value(key):  [FSMGV-001]
-    #     data := AWAIT self.get_data()  [FSMGV-002, FSMGV-003]
-    #     // Read from the mapping returned for this exact context; do not copy,
-    #     // update, remove, normalize, or otherwise mutate its stored data.  [FSMGV-004]
-    #     value := data[key]
-    #     // Direct mapping subscription preserves supported key identity and lookup
-    #     // semantics, including propagating KeyError when key is absent.  [FSMGV-005, FSMGV-006]
-    #     // Presence is decided by subscription, never by the truthiness of value.  [FSMGV-007]
-    #     RETURN value
-    # END PROCEDURE
-    # Existing get_data control flow and its returned mapping remain unchanged.  [FSMGV-008]
+    async def get_value(self, key: str) -> Any:
+        # FSMGV-001..008: use this context's unchanged bulk-read boundary and
+        # preserve the returned mapping's subscription semantics.
+        return (await self.get_data())[key]
 
     async def update_data(
         self, data: Optional[Dict[str, Any]] = None, **kwargs: Any
