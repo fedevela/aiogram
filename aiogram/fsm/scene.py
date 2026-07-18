@@ -572,11 +572,14 @@ class SceneWizard:
         """
         return await self.state.get_data()
 
-    # GUID: FSMVAL-007 -- SceneWizard single-value retrieval architecture contract.
-    # Ownership: the async ``get_value(self, key: str) -> Any`` surface belongs to this
-    # data-access group, adjacent to ``get_data`` and ``update_data``.
-    # Dependency direction: SceneWizard -> its injected ``state: FSMContext`` retrieval port;
-    # storage access and missing-key semantics remain owned by FSMContext.
+    async def get_value(self, key: str) -> Any:
+        """
+        Get a value from the data stored in the current state.
+
+        :param key: The key of the value to retrieve.
+        :return: The value stored under the key.
+        """
+        return await self.state.get_value(key)
 
     async def update_data(
         self, data: Optional[Dict[str, Any]] = None, **kwargs: Any
