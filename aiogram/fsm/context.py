@@ -20,6 +20,14 @@ class FSMContext:
     async def get_data(self) -> Dict[str, Any]:
         return await self.storage.get_data(key=self.key)
 
+    # ARCHITECTURE — FSMContext owns the single-value read contract beside its
+    # existing bulk-data boundary.  [FSMGV-001, FSMGV-002, FSMGV-008]
+    # Dependency direction remains FSMContext -> get_data() -> BaseStorage;
+    # storage backends gain no selective-read port or implementation.  [FSMGV-003]
+    # The mapping returned by get_data() remains the lookup authority, preserving
+    # its read-only key, missing-key, and value semantics.
+    # [FSMGV-004, FSMGV-005, FSMGV-006, FSMGV-007]
+
     # PSEUDOCODE — FSMContext single-value lookup
     #
     # ASYNC PROCEDURE get_value(key):  [FSMGV-001]
