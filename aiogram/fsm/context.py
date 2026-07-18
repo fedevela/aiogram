@@ -20,6 +20,11 @@ class FSMContext:
     async def get_data(self) -> Dict[str, Any]:
         return await self.storage.get_data(key=self.key)
 
+    # Architecture boundary (FSMVALUE-001..005): FSMContext owns the single-value
+    # read as a context-level convenience beside get_data. Its only storage-side port
+    # is BaseStorage.get_data(StorageKey); BaseStorage and its adapters stay unchanged.
+    # The existing self.key crossing that port is the sole addressing/isolation seam,
+    # and this read-only operation has no dependency on state or data write methods.
     # FSMVALUE-001, FSMVALUE-002: async get_value(key: str) -> Any
     # FSMVALUE-003, FSMVALUE-004: data := await storage.get_data(key=self.key), using
     # the existing storage contract and this context's complete, strategy-derived address.
