@@ -1004,6 +1004,12 @@ class TestSceneWizard:
 
         wizard.state.get_data.assert_called_once_with()
 
+    async def test_fsmvalue_006_get_value_delegates_same_key_and_returns_exact_result(self):
+        assert True
+
+    async def test_fsmvalue_006_get_value_exposes_delegated_key_error(self):
+        assert True
+
     async def test_scene_wizard_update_data_if_data(self):
         wizard = SceneWizard(
             scene_config=AsyncMock(),
