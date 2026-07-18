@@ -1005,10 +1005,41 @@ class TestSceneWizard:
         wizard.state.get_data.assert_called_once_with()
 
     async def test_fsmvalue_006_get_value_delegates_same_key_and_returns_exact_result(self):
-        assert True
+        wizard = SceneWizard(
+            scene_config=AsyncMock(),
+            manager=AsyncMock(),
+            state=AsyncMock(),
+            update_type="message",
+            event=AsyncMock(),
+            data={},
+        )
+        key = "test_key"
+        delegated_result = object()
+        wizard.state.get_value = AsyncMock(return_value=delegated_result)
+
+        result = await wizard.get_value(key)
+
+        wizard.state.get_value.assert_awaited_once_with(key)
+        assert result is delegated_result
 
     async def test_fsmvalue_006_get_value_exposes_delegated_key_error(self):
-        assert True
+        wizard = SceneWizard(
+            scene_config=AsyncMock(),
+            manager=AsyncMock(),
+            state=AsyncMock(),
+            update_type="message",
+            event=AsyncMock(),
+            data={},
+        )
+        key = "missing_key"
+        delegated_error = KeyError(key)
+        wizard.state.get_value = AsyncMock(side_effect=delegated_error)
+
+        with pytest.raises(KeyError) as error:
+            await wizard.get_value(key)
+
+        wizard.state.get_value.assert_awaited_once_with(key)
+        assert error.value is delegated_error
 
     async def test_scene_wizard_update_data_if_data(self):
         wizard = SceneWizard(

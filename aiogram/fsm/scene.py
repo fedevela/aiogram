@@ -572,14 +572,14 @@ class SceneWizard:
         """
         return await self.state.get_data()
 
-    # FSMVALUE-006 architecture: SceneWizard owns the scene-facing facade at this data-access
-    # seam; FSMContext remains the retrieval owner and the dependency points wizard -> context.
-    # The facade contract adds no result transformation or exception policy at this boundary.
-    # FSMVALUE-006 logic obligation: expose single-value retrieval as a transparent facade.
-    # async def get_value(self, key: str) -> Any:
-    #     delegated_result = await self.state.get_value(key)
-    #     return delegated_result
-    # Failure path: do not catch or translate KeyError raised by the delegated operation.
+    async def get_value(self, key: str) -> Any:
+        """
+        Returns a value stored under the specified key in the current state.
+
+        :param key: The key of the value to retrieve.
+        :return: The value stored under the specified key.
+        """
+        return await self.state.get_value(key)
 
     async def update_data(
         self, data: Optional[Dict[str, Any]] = None, **kwargs: Any
