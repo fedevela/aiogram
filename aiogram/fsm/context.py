@@ -20,6 +20,13 @@ class FSMContext:
     async def get_data(self) -> Dict[str, Any]:
         return await self.storage.get_data(key=self.key)
 
+    # ARCHITECTURE (GUID: FSMVAL-001, FSMVAL-004, FSMVAL-005): FSMContext owns the
+    # single-value convenience seam here, adjacent to its aggregate data access. The seam
+    # depends inward on BaseStorage.get_data with self.key; BaseStorage and its backends gain
+    # no single-value contract or reverse dependency.
+    # ARCHITECTURE (GUID: FSMVAL-002, FSMVAL-003, FSMVAL-006, FSMVAL-008): mapping lookup is
+    # confined to this context-level seam. Existing storage, mutation, state, and isolation
+    # boundaries remain structurally unchanged.
     # GUID: FSMVAL-001, FSMVAL-004, FSMVAL-005
     # ASYNC PROCEDURE get_value(key: str) -> Any:
     #   data <- AWAIT self.storage.get_data(key=self.key)
