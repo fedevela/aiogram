@@ -572,6 +572,12 @@ class SceneWizard:
         """
         return await self.state.get_data()
 
+    # FSMVALUE-006 logic obligation: expose single-value retrieval as a transparent facade.
+    # async def get_value(self, key: str) -> Any:
+    #     delegated_result = await self.state.get_value(key)
+    #     return delegated_result
+    # Failure path: do not catch or translate KeyError raised by the delegated operation.
+
     async def update_data(
         self, data: Optional[Dict[str, Any]] = None, **kwargs: Any
     ) -> Dict[str, Any]:
