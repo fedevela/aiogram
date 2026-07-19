@@ -97,6 +97,7 @@ Read more
     storages
     strategy
     scene
+    compatibility
 
 
 .. _wiki: https://en.wikipedia.org/wiki/Finite-state_machine
