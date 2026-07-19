@@ -193,6 +193,138 @@ Components
 .. autoclass:: aiogram.fsm.scene.SceneWizard
     :members:
 
+
+SceneWizard single-value lookup procedural contract
+===================================================
+
+The scene accessor is a transparent asynchronous facade over
+``FSMContext.get_value``.  The procedure below records the complete scene-owned logic;
+the context and configured storage retain ownership of FSM identity, value selection,
+persistence, and read consistency.
+
+Requirement-to-logic traceability
+---------------------------------
+
+All scene-level obligations map to ``SCENE_WIZARD_GET_VALUE``:
+
+* ``FSMVALUE-008`` —
+  ``test_fsmvalue_008_scene_wizard_delegates_data_key_with_omitted_none_default_and_returns_context_result``
+  and
+  ``test_fsmvalue_008_scene_wizard_delegates_exact_data_key_and_supplied_default_and_returns_context_result_unchanged``
+* ``FSMVALUE-009`` —
+  ``test_fsmvalue_009_scene_wizard_get_value_once_or_repeatedly_for_present_or_absent_keys_preserves_fsm_state``
+* ``FSMVALUE-010`` —
+  ``test_fsmvalue_010_scene_wizard_get_value_once_or_repeatedly_for_present_or_absent_keys_preserves_complete_data``
+* ``FSMVALUE-012`` —
+  ``test_fsmvalue_012_scene_wizard_get_value_propagates_storage_read_exception_to_scene_caller``
+  and
+  ``test_fsmvalue_012_scene_wizard_get_value_propagates_storage_read_cancellation_to_scene_caller``
+
+Scene accessor delegation
+-------------------------
+
+.. code-block:: text
+
+    PROCEDURE SCENE_WIZARD_GET_VALUE(wizard, data_key, default = None)
+      REQUIREMENT_IDS: FSMVALUE-008, FSMVALUE-009, FSMVALUE-010, FSMVALUE-012
+      VERIFICATION:
+        test_fsmvalue_008_scene_wizard_delegates_data_key_with_omitted_none_default_and_returns_context_result
+        test_fsmvalue_008_scene_wizard_delegates_exact_data_key_and_supplied_default_and_returns_context_result_unchanged
+        test_fsmvalue_009_scene_wizard_get_value_once_or_repeatedly_for_present_or_absent_keys_preserves_fsm_state
+        test_fsmvalue_010_scene_wizard_get_value_once_or_repeatedly_for_present_or_absent_keys_preserves_complete_data
+        test_fsmvalue_012_scene_wizard_get_value_propagates_storage_read_exception_to_scene_caller
+        test_fsmvalue_012_scene_wizard_get_value_propagates_storage_read_cancellation_to_scene_caller
+
+      INPUTS / PRECONDITIONS
+        wizard.state is the FSMContext supplied when this SceneWizard was constructed
+        data_key is the exact caller-supplied data key
+        default is either omitted or is the exact caller-supplied object
+        No scene lifecycle transition, authorization decision, or data validation is required
+
+      RESOLVE DEFAULT
+        IF the caller omitted default
+          delegated_default := None
+        ELSE
+          delegated_default := the exact caller-supplied default
+        END IF
+
+      DELEGATE / AWAIT
+        AWAIT wizard.state.get_value(
+          data_key = data_key,
+          default = delegated_default,
+        ) exactly once
+        RECEIVE context_result only after that await completes successfully
+
+      DATA FLOW INVARIANTS
+        FORWARD data_key without normalization, copying, validation, or substitution
+        FORWARD delegated_default without copying, coercion, or substitution
+        DO NOT inspect, copy, cache, coerce, or replace context_result
+
+      STATE / MUTATION INVARIANTS
+        DO NOT call wizard.state.get_state, set_state, get_data, set_data,
+          update_data, or clear
+        DO NOT invoke enter, leave, exit, back, retake, goto, manager history,
+          scene actions, persistence mutations, events, or notifications
+        Successful completion causes no FSM or scene state transition
+        Successful completion preserves the complete stored FSM data
+        Repeated invocation performs one independent context delegation per call and
+          retains the same no-transition and no-mutation guarantees for present and
+          absent keys
+
+      ORDERING / CONCURRENCY
+        Begin no wizard-owned lock, transaction, retry, compensation, or background work
+        Suspend only while awaiting the underlying FSMContext accessor
+        Concurrent calls remain independent and use the context/storage read semantics
+        Completion of one invocation does not initiate or await another invocation
+
+      RETURN context_result unchanged to the scene caller
+
+      ON FAILURE from wizard.state.get_value, including storage read exception or
+        asynchronous cancellation
+        DO NOT return delegated_default, None, or any other successful result
+        DO NOT catch, retry, compensate, translate, wrap, log-and-suppress, or replace
+          the failure
+        PROPAGATE the same failure to the scene caller
+    END PROCEDURE
+
+Owning boundary and implementation sequence
+-------------------------------------------
+
+``aiogram/fsm/scene.py`` owns ``SCENE_WIZARD_GET_VALUE`` because ``SceneWizard`` already
+owns the scene-facing ``set_data``, ``get_data``, ``update_data``, and ``clear_data``
+facade.  The implementation is one asynchronous method alongside those operations.  Its
+body is one awaited return expression that passes the exact ``data_key`` and resolved
+``default`` to ``self.state.get_value``.  It adds no constructor argument, validation
+branch, lifecycle call, result transformation, or failure boundary.
+
+``aiogram/fsm/context.py`` remains the only outgoing dependency.  Its existing
+``FSMContext.get_value`` procedure forwards the complete context ``StorageKey`` and the
+scene arguments to ``BaseStorage.get_value``.  ``SceneWizard`` must not call ``get_data``
+or a storage object directly: either choice would duplicate value/default semantics or
+bypass a conforming context/storage accessor.
+
+The complete asynchronous call topology is:
+
+.. code-block:: text
+
+    scene caller
+      -> SceneWizard.get_value(data_key, default)
+      -> wizard.state.get_value(data_key, default)
+      -> configured BaseStorage.get_value(context.key, data_key, default)
+      -> backend read path
+      -> unchanged result or unchanged failure through every boundary
+
+No queue, scheduled work, transaction, schema, migration, generated boundary, retry
+policy, or recovery state participates in this read.  Existing scene entry, exit,
+history, and action flows remain separate and unchanged.
+
+``tests/test_fsm/test_scene_get_value_contract.py`` owns the six named verification
+obligations.  ``tests/test_fsm/scene_get_value_verification_map.json`` preserves their
+bidirectional mapping to ``FSMVALUE-008``, ``FSMVALUE-009``, ``FSMVALUE-010``, and
+``FSMVALUE-012``.  Implementation proceeds by adding only the transparent method to
+``SceneWizard``; no storage, context, scene-construction, or configuration change is
+required.
+
 Markers
 -------
 
