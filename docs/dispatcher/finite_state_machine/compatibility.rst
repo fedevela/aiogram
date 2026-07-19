@@ -324,3 +324,192 @@ and ``aiogram/fsm/scene.py``.  The supported interpreter contract is declared in
 ``tests/test_fsm/fsmvalue_compatibility_verification_map.json``; the procedures above do
 not change production source, schemas, persistence formats, transactions, or generated
 boundaries.
+
+FSM compatibility architecture record
+=====================================
+
+This record gives every ``FSMVALUE-013`` and ``FSMVALUE-014`` procedure an
+implementation-ready home in the existing FSM layering.  It preserves the direction
+``SceneWizard -> FSMContext -> BaseStorage -> configured backend`` and introduces no new
+backend adapter, persistence representation, lifecycle participant, or public-module
+alias.
+
+Architecture traceability map
+-----------------------------
+
+``FSMVALUE-013``
+~~~~~~~~~~~~~~~~
+
+* ``PRESERVE_STORAGE_OPERATION_CONTRACTS`` and
+  ``test_fsmvalue_013_memory_redis_and_mongo_established_storage_operations_preserve_inputs_results_isolation_and_mutations``
+  map to the abstract operation contracts in ``aiogram/fsm/storage/base.py``, their
+  existing Memory, Redis, and Mongo implementations, and the shared parametrized seam in
+  ``tests/test_fsm/storage/test_storages.py``.  Backend data ownership, key encoding,
+  mutation, isolation, serialization, and connection cleanup remain at those loci.
+* ``PRESERVE_FSM_CONTEXT_WORKFLOWS`` and
+  ``test_fsmvalue_013_fsm_context_established_state_and_data_workflows_preserve_results_and_mutations``
+  map to ``FSMContext`` in ``aiogram/fsm/context.py`` and its regression seam in
+  ``tests/test_fsm/test_context.py``.  The context remains the sole owner of binding a
+  configured storage to one complete ``StorageKey``.
+* ``PRESERVE_SCENE_WIZARD_WORKFLOWS`` and
+  ``test_fsmvalue_013_scene_wizard_established_state_and_data_workflows_preserve_results_and_mutations``
+  map to the data-facade methods on ``SceneWizard`` in ``aiogram/fsm/scene.py`` and the
+  existing ``TestSceneWizard`` cases in ``tests/test_fsm/test_scene.py``.  Scene lifecycle
+  methods, ``ScenesManager``, and ``HistoryManager`` remain outside the data-access path.
+* ``INHERIT_DEFAULT_GET_VALUE_IN_CUSTOM_STORAGE`` and
+  ``test_fsmvalue_013_custom_storage_with_only_preexisting_abstract_operations_remains_concrete_and_inherits_default_get_value``
+  map to the concrete, non-abstract ``BaseStorage.get_value`` declaration and the
+  contract-subclass seam in ``tests/test_fsm/storage/test_get_value_contract.py``.
+  Custom storages acquire lookup through inheritance without a new required override.
+
+``FSMVALUE-014``
+~~~~~~~~~~~~~~~~
+
+``IMPORT_AND_AWAIT_FSM_GET_VALUE_ON_SUPPORTED_CPYTHON`` maps all five verification
+obligations to the same public source and execution topology:
+
+* ``test_fsmvalue_014_cpython_3_9_public_fsm_apis_import_and_get_value_coroutines_await_successfully``
+* ``test_fsmvalue_014_cpython_3_10_public_fsm_apis_import_and_get_value_coroutines_await_successfully``
+* ``test_fsmvalue_014_cpython_3_11_public_fsm_apis_import_and_get_value_coroutines_await_successfully``
+* ``test_fsmvalue_014_cpython_3_12_public_fsm_apis_import_and_get_value_coroutines_await_successfully``
+* ``test_fsmvalue_014_cpython_3_13_public_fsm_apis_import_and_get_value_coroutines_await_successfully``
+
+The import loci are ``aiogram.fsm.storage.base.BaseStorage``,
+``aiogram.fsm.context.FSMContext``, and ``aiogram.fsm.scene.SceneWizard``.  Their method
+signatures use the repository's Python 3.9-compatible ``typing`` forms.  The supported
+version declaration and distribution classifiers are owned by ``pyproject.toml``; the
+independent CPython 3.9--3.13 installation, import, lint, type, and await execution jobs
+are owned by the non-fail-fast matrix in ``.github/workflows/tests.yml``.  The five named
+cases remain the focused verification index consumed within each matrix environment, not
+five version branches in production code.
+
+Placement and ownership
+-----------------------
+
+``aiogram/fsm/storage/base.py`` -- storage contract and fallback owner
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* **Requirements and procedures:** ``FSMVALUE-013`` through
+  ``INHERIT_DEFAULT_GET_VALUE_IN_CUSTOM_STORAGE`` and
+  ``PRESERVE_STORAGE_OPERATION_CONTRACTS``; ``FSMVALUE-014`` through
+  ``IMPORT_AND_AWAIT_FSM_GET_VALUE_ON_SUPPORTED_CPYTHON``.
+* **Responsibility:** keep ``get_value(key, dict_key, default=None)`` asynchronous,
+  concrete, and adjacent to the abstract complete-data read.  The default implementation
+  awaits polymorphic ``self.get_data(key=key)`` once and owns only exact-key/default
+  selection.
+* **Incoming dependencies:** ``FSMContext`` and direct storage consumers depend on the
+  ``BaseStorage`` contract.  Third-party storage subclasses implement the pre-existing
+  abstract state, data, and close ports.
+* **Outgoing dependencies:** the fallback depends only on the subclass-provided
+  ``get_data`` port.  It does not import a concrete backend, context, scene, test, or CI
+  concern.
+* **State and failure ownership:** it owns no state and invokes no mutation.  ``get_data``
+  exceptions and cancellations cross the await unchanged; no default is substituted for
+  a failed read.
+
+Concrete storage modules -- persistence and lifecycle owners
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* **Loci:** ``aiogram/fsm/storage/memory.py``, ``redis.py``, and ``mongo.py``.
+* **Responsibility:** retain all established implementations of ``set_state``,
+  ``get_state``, ``set_data``, ``get_data``, ``update_data``, and ``close``.  Memory owns
+  copied in-process records; Redis owns key building, JSON encoding, TTL, and client/pool
+  cleanup; Mongo owns document fields, upserts, field removal, and client cleanup.
+* **Substitution boundary:** these implementations inherit the base fallback.  No backend
+  override, registration, migration, data-field addition, or connection-lifecycle change
+  is required for either requirement.
+* **Consistency:** lookup receives each backend's existing read consistency.  It adds no
+  lock, transaction, retry, cache, compensation, queue, publication, or background task.
+
+``aiogram/fsm/context.py`` -- identity-bound FSM facade owner
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* **Requirements and procedures:** ``FSMVALUE-013`` through
+  ``PRESERVE_FSM_CONTEXT_WORKFLOWS``; ``FSMVALUE-014`` through the context portion of
+  ``IMPORT_AND_AWAIT_FSM_GET_VALUE_ON_SUPPORTED_CPYTHON``.
+* **Responsibility:** preserve the constructor-supplied ``BaseStorage`` and complete
+  ``StorageKey`` as the context's bound identity.  Existing state/data methods keep their
+  exact delegations and sequencing; ``get_value`` forwards ``self.key``, the data key,
+  and default to the storage contract and returns the awaited result unchanged.
+* **Boundary:** callers do not encode storage keys or select persistence backends.
+  ``FSMContext`` does not read complete data to implement single-value lookup, so value
+  selection remains polymorphic at the storage boundary.
+* **Lifecycle and failure:** ``clear`` remains the ordered state reset followed by data
+  reset, with its existing partial-failure behavior.  Lookup is an independent read and
+  adds no rollback, retry, or error translation to any workflow.
+
+``aiogram/fsm/scene.py`` -- scene-facing data facade owner
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* **Requirements and procedures:** ``FSMVALUE-013`` through
+  ``PRESERVE_SCENE_WIZARD_WORKFLOWS``; ``FSMVALUE-014`` through the scene portion of
+  ``IMPORT_AND_AWAIT_FSM_GET_VALUE_ON_SUPPORTED_CPYTHON``.
+* **Responsibility:** keep ``set_data``, ``get_data``, ``update_data``, ``clear_data``, and
+  ``get_value`` as thin asynchronous delegations to the constructor-supplied
+  ``FSMContext``.  Existing merge precedence and return behavior stay at the wizard
+  facade.
+* **Non-participants:** scene entry, leave, exit, navigation, action dispatch, history,
+  registry, and manager construction have no dependency on lookup and receive no new
+  state or event.
+* **Failure boundary:** delegated results, exceptions, and cancellations cross unchanged;
+  the wizard owns no retry, fallback, compensation, or observability side effect.
+
+Packaging, CI, and verification owners
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* ``pyproject.toml`` owns the minimum interpreter declaration, CPython classifiers, type
+  checker settings, and formatter target.  New declarations must remain valid at the
+  Python 3.9 syntax and typing floor.
+* ``.github/workflows/tests.yml`` owns cross-version installation and execution.  Its
+  CPython 3.9--3.13 matrix has ``fail-fast: false``, so every interpreter is an independent
+  compatibility obligation; production code must not dispatch on interpreter version.
+* ``tests/test_fsm/test_fsmvalue_compatibility_contract.py`` and
+  ``tests/test_fsm/fsmvalue_compatibility_verification_map.json`` own the focused named
+  obligations and bidirectional traceability.  Existing storage, context, scene, and
+  get-value contract tests are the executable collaborators those obligations extend.
+  Production modules have no dependency on verification artifacts.
+
+Contracts and dependency direction
+----------------------------------
+
+The synchronous dependency graph contains one awaited, read-only call chain:
+
+.. code-block:: text
+
+    scene caller
+      -> SceneWizard.get_value(data_key, default)
+      -> FSMContext.get_value(data_key, default)
+      -> BaseStorage.get_value(context.key, dict_key, default)
+      -> configured storage.get_data(context.key)
+      -> unchanged value/default, exception, or cancellation
+
+``StorageKey`` is owned by the storage contract and bound by ``FSMContext``.  The scene
+facade never observes it.  The data key and optional default flow downward unchanged; only
+the context adds identity.  Complete storage data crosses only the backend-to-base seam,
+where exact-key selection occurs.  No complete mapping crosses the context or scene
+boundary for this accessor.
+
+The existing mutation graph is separate: scene data methods delegate to context mutation
+methods, which delegate to the configured storage.  Adding the read chain does not insert
+itself into ``set_state``, ``get_state``, ``set_data``, ``get_data``, ``update_data``,
+``clear``, ``clear_data``, or ``close``.  There are no asynchronous integration seams
+beyond direct coroutine awaits: no events, brokers, jobs, queues, callbacks, or eventual
+consistency protocol participate.
+
+Validation seams and implementation sequence
+--------------------------------------------
+
+Implementation follows ownership from the inside out:
+
+1. Preserve the concrete ``BaseStorage.get_value`` fallback and its non-abstract status;
+   do not alter backend persistence implementations.
+2. Preserve the thin ``FSMContext.get_value`` identity-binding delegation and all
+   pre-existing context workflow methods.
+3. Preserve the thin ``SceneWizard.get_value`` facade and keep lifecycle collaborators
+   excluded.
+4. Execute the focused compatibility contract in the supported matrix while retaining
+   the existing storage, context, and scene regressions as their owning test seams.
+
+No schema migration, compatibility adapter, generated artifact, configuration switch,
+deployment ordering, or rollback mechanism is needed.  The architectural record is the
+only phase delta; runtime behavior remains stable.
