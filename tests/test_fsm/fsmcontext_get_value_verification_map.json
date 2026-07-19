@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "requirements": {
+    "FSMVALUE-003": [
+      {
+        "path": "tests/test_fsm/test_context_get_value_contract.py",
+        "name": "test_fsmvalue_003_context_delegates_complete_unchanged_key_name_and_omitted_none_default"
+      },
+      {
+        "path": "tests/test_fsm/test_context_get_value_contract.py",
+        "name": "test_fsmvalue_003_context_delegates_supplied_default_and_returns_storage_result"
+      }
+    ],
+    "FSMVALUE-007": [
+      {
+        "path": "tests/test_fsm/test_context_get_value_contract.py",
+        "name": "test_fsmvalue_007_context_lookup_is_isolated_by_every_storage_key_identity_dimension"
+      }
+    ],
+    "FSMVALUE-009": [
+      {
+        "path": "tests/test_fsm/test_context_get_value_contract.py",
+        "name": "test_fsmvalue_009_context_get_value_does_not_change_established_fsm_state"
+      }
+    ],
+    "FSMVALUE-010": [
+      {
+        "path": "tests/test_fsm/test_context_get_value_contract.py",
+        "name": "test_fsmvalue_010_repeated_context_get_value_calls_do_not_change_complete_stored_data"
+      }
+    ],
+    "FSMVALUE-012": [
+      {
+        "path": "tests/test_fsm/test_context_get_value_contract.py",
+        "name": "test_fsmvalue_012_context_get_value_propagates_storage_read_exception_to_caller"
+      },
+      {
+        "path": "tests/test_fsm/test_context_get_value_contract.py",
+        "name": "test_fsmvalue_012_context_get_value_propagates_storage_read_cancellation_to_caller"
+      }
+    ]
+  },
+  "artifacts": {
+    "tests/test_fsm/test_context_get_value_contract.py::test_fsmvalue_003_context_delegates_complete_unchanged_key_name_and_omitted_none_default": [
+      "FSMVALUE-003"
+    ],
+    "tests/test_fsm/test_context_get_value_contract.py::test_fsmvalue_003_context_delegates_supplied_default_and_returns_storage_result": [
+      "FSMVALUE-003"
+    ],
+    "tests/test_fsm/test_context_get_value_contract.py::test_fsmvalue_007_context_lookup_is_isolated_by_every_storage_key_identity_dimension": [
+      "FSMVALUE-007"
+    ],
+    "tests/test_fsm/test_context_get_value_contract.py::test_fsmvalue_009_context_get_value_does_not_change_established_fsm_state": [
+      "FSMVALUE-009"
+    ],
+    "tests/test_fsm/test_context_get_value_contract.py::test_fsmvalue_010_repeated_context_get_value_calls_do_not_change_complete_stored_data": [
+      "FSMVALUE-010"
+    ],
+    "tests/test_fsm/test_context_get_value_contract.py::test_fsmvalue_012_context_get_value_propagates_storage_read_cancellation_to_caller": [
+      "FSMVALUE-012"
+    ],
+    "tests/test_fsm/test_context_get_value_contract.py::test_fsmvalue_012_context_get_value_propagates_storage_read_exception_to_caller": [
+      "FSMVALUE-012"
+    ]
+  }
+}
