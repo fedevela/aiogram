@@ -490,3 +490,155 @@ verification obligations, while
 bidirectional requirement mapping.  Implementation follows one dependency step: add the
 transparent method to ``FSMContext`` without changing ``BaseStorage``, concrete backends,
 middleware context construction, schemas, migrations, queues, or runtime configuration.
+
+
+FSM context single-value delegation architecture record
+========================================================
+
+This record gives ``FSM_CONTEXT_GET_VALUE`` an implementation-ready home while preserving
+the existing FSM dependency direction.  The context remains a caller-facing facade over a
+configured ``BaseStorage`` and one complete ``StorageKey``; it does not become a data owner,
+backend adapter, identity encoder, transaction boundary, or failure boundary.
+
+Architecture traceability map
+-----------------------------
+
+* ``FSMVALUE-003``,
+  ``test_fsmvalue_003_context_delegates_complete_unchanged_key_name_and_omitted_none_default``,
+  and
+  ``test_fsmvalue_003_context_delegates_supplied_default_and_returns_storage_result`` map
+  ``FSM_CONTEXT_GET_VALUE`` to a new concrete asynchronous ``FSMContext.get_value`` method
+  in ``aiogram/fsm/context.py`` and to its existing outgoing ``BaseStorage.get_value``
+  contract in ``aiogram/fsm/storage/base.py``.
+* ``FSMVALUE-007`` and
+  ``test_fsmvalue_007_context_lookup_is_isolated_by_every_storage_key_identity_dimension``
+  map ``FSM_CONTEXT_GET_VALUE`` to unchanged forwarding of ``FSMContext.key`` and to the
+  frozen ``StorageKey`` identity contract.  Storage implementations and their configured
+  key builders remain responsible for physical isolation after the complete key crosses
+  the context-to-storage seam.
+* ``FSMVALUE-009`` and
+  ``test_fsmvalue_009_context_get_value_does_not_change_established_fsm_state`` map
+  ``FSM_CONTEXT_GET_VALUE`` to the read-only context-to-storage path.  The method has no
+  dependency on ``FSMContext.set_state``, ``BaseStorage.set_state``, or any lifecycle
+  transition.
+* ``FSMVALUE-010`` and
+  ``test_fsmvalue_010_repeated_context_get_value_calls_do_not_change_complete_stored_data``
+  map ``FSM_CONTEXT_GET_VALUE`` to one independent storage delegation per invocation.  The
+  context neither receives nor mutates the complete data mapping and does not call any
+  context or storage mutation port.
+* ``FSMVALUE-012``,
+  ``test_fsmvalue_012_context_get_value_propagates_storage_read_exception_to_caller``, and
+  ``test_fsmvalue_012_context_get_value_propagates_storage_read_cancellation_to_caller``
+  map ``FSM_CONTEXT_GET_VALUE`` to an unguarded await of ``BaseStorage.get_value``.  The
+  context adds no catch, retry, fallback, translation, compensation, or cancellation
+  boundary.
+
+Placement and ownership
+-----------------------
+
+``aiogram/fsm/context.py`` — context delegation owner
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* **Requirements:** ``FSMVALUE-003``, ``FSMVALUE-007``, ``FSMVALUE-009``,
+  ``FSMVALUE-010``, and ``FSMVALUE-012``.
+* **Procedure:** ``FSM_CONTEXT_GET_VALUE``.
+* **Responsibility:** expose ``get_value(data_key, default=None)`` alongside the existing
+  ``get_state`` and ``get_data`` facade methods.  Its entire authority is to await
+  ``self.storage.get_value(key=self.key, dict_key=data_key, default=default)`` and return
+  that result directly.
+* **Owned state:** none.  ``storage`` and ``key`` are constructor-supplied collaborators;
+  the accessor reads both references but has no mutation authority over either one.
+* **Incoming dependencies:** handlers, scenes, middleware-injected state objects, and
+  direct callers depend on the public ``FSMContext`` API.  No caller needs access to a
+  concrete storage backend.
+* **Outgoing dependency:** depend only on the existing ``BaseStorage.get_value`` method.
+  Do not call ``get_data`` directly, because that would bypass a conforming storage
+  override and duplicate storage-owned value/default semantics.
+* **Compatibility:** adding a concrete method does not alter context construction or any
+  existing context method.  There is no new constructor argument, exported symbol,
+  configuration field, or lifecycle hook.
+
+``aiogram/fsm/storage/base.py`` — outgoing value-read contract and identity owner
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* **Requirements:** all five requirements through the context's outgoing seam;
+  ``FSMVALUE-007`` additionally binds the complete identity contract here.
+* **Procedure:** ``FSM_CONTEXT_GET_VALUE`` delegates into the previously recorded
+  ``DISPATCH_GET_VALUE`` and ``BASE_STORAGE_GET_VALUE`` procedures.
+* **Responsibility:** ``BaseStorage.get_value`` owns polymorphic value selection, caller
+  default semantics, and the backend read.  The frozen ``StorageKey`` owns bot, chat,
+  user, thread, business connection, and destiny identity as one value.
+* **Contract crossing the seam:** the exact ``FSMContext.key``, exact caller data key, and
+  exact default cross into storage; the storage result or raised failure crosses back.
+  The context does not reconstruct a ``StorageKey`` or unpack any identity dimension.
+* **Substitution:** normal virtual dispatch must reach an inherited or overridden
+  ``get_value`` implementation.  The context therefore depends on ``BaseStorage``, never
+  on Memory, Redis, Mongo, or a custom storage class.
+
+``aiogram/fsm/middleware.py`` and ``aiogram/fsm/scene.py`` — identity assembly and reuse
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* **Requirement:** ``FSMVALUE-007``.
+* **Procedure:** precondition supply for ``FSM_CONTEXT_GET_VALUE``; neither module owns
+  the lookup procedure.
+* **Responsibility:** middleware continues to assemble the complete ``StorageKey`` from
+  bot and event identity after applying the configured FSM strategy.  Scene history may
+  derive a new frozen key with a different destiny before constructing another context.
+* **Dependency direction:** these modules construct ``FSMContext`` values; the context
+  never depends back on middleware, event models, FSM strategy, or scene management.
+* **Structural delta:** none.  Existing constructors already supply the complete key and
+  configured storage required by the accessor.
+
+``aiogram/fsm/storage/{memory,redis,mongo}.py`` and custom storages — data owners
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* **Requirements:** ``FSMVALUE-007``, ``FSMVALUE-009``, ``FSMVALUE-010``, and
+  ``FSMVALUE-012`` after delegation leaves the context boundary.
+* **Procedure:** downstream execution of ``FSM_CONTEXT_GET_VALUE`` through the existing
+  storage procedures.
+* **Responsibility:** retain record ownership, physical identity encoding, read
+  consistency, serialization, backend I/O, and backend failure behavior.  No backend
+  implementation change is required by the context accessor.
+* **Lifecycle and failure ownership:** backend connections continue to be closed by their
+  established storage lifecycle.  A read opens no context-owned lock or transaction and
+  publishes no event.  Backend, codec, key-building, and cancellation failures propagate
+  through both storage and context without translation.
+
+Boundaries, flow, and validation seams
+--------------------------------------
+
+The only new public contract is the asynchronous ``FSMContext.get_value`` method.  Its
+call topology is:
+
+.. code-block:: text
+
+    caller
+      -> FSMContext.get_value(data_key, default)
+      -> configured BaseStorage.get_value(context.key, data_key, default)
+      -> inherited or overridden storage read path
+      -> result or unchanged failure
+
+This is a synchronous call relationship containing asynchronous awaits, not a queue,
+event, job, or background-work seam.  ``FSMContext`` owns completion only until the
+delegated await returns or raises.  Storage retains data and consistency ownership; no
+new cache, persistence schema, migration, authorization check, deployment setting,
+observability event, retry policy, or compensation path is introduced.
+
+``tests/test_fsm/test_context_get_value_contract.py`` is the focused context-boundary
+verification seam.  Its instrumented storage collaborator must observe exact argument
+identity and polymorphic dispatch; ``MemoryStorage`` contexts must demonstrate isolation
+and read-only behavior; failing collaborators must demonstrate unchanged exception and
+cancellation propagation.  ``tests/test_fsm/fsmcontext_get_value_verification_map.json``
+continues to own bidirectional requirement-to-verification traceability.  Production
+modules do not depend on either test artifact.
+
+Implementation sequence
+-----------------------
+
+1. Add the one-expression asynchronous method to ``FSMContext`` using the existing
+   ``BaseStorage.get_value`` contract; do not change context construction or storage
+   implementations.
+2. Replace the seven focused context verification placeholders with executable delegation,
+   isolation, immutability, and failure-propagation cases.
+3. Run the focused context contract, existing context/storage regression seams, formatting,
+   typing, and documentation validation.  No migration or staged rollout is required.
