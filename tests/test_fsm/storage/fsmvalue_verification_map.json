@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "requirements": {
+    "FSMVALUE-001": [
+      {
+        "path": "tests/test_fsm/storage/test_get_value_contract.py",
+        "name": "test_fsmvalue_001_get_value_accepts_storage_key_string_key_and_optional_none_default"
+      }
+    ],
+    "FSMVALUE-002": [
+      {
+        "path": "tests/test_fsm/storage/test_get_value_contract.py",
+        "name": "test_fsmvalue_002_default_get_value_awaits_get_data_with_the_unchanged_storage_key"
+      },
+      {
+        "path": "tests/test_fsm/storage/test_get_value_contract.py",
+        "name": "test_fsmvalue_002_storage_subclass_override_is_used_when_get_value_is_awaited"
+      }
+    ],
+    "FSMVALUE-004": [
+      {
+        "path": "tests/test_fsm/storage/test_get_value_contract.py",
+        "name": "test_fsmvalue_004_each_exact_string_key_returns_its_untransformed_supported_value"
+      }
+    ],
+    "FSMVALUE-005": [
+      {
+        "path": "tests/test_fsm/storage/test_get_value_contract.py",
+        "name": "test_fsmvalue_005_absent_key_returns_none_or_the_caller_supplied_default"
+      }
+    ],
+    "FSMVALUE-006": [
+      {
+        "path": "tests/test_fsm/storage/test_get_value_contract.py",
+        "name": "test_fsmvalue_006_present_falsy_or_none_value_wins_over_the_supplied_default"
+      }
+    ],
+    "FSMVALUE-007": [
+      {
+        "path": "tests/test_fsm/storage/test_get_value_contract.py",
+        "name": "test_fsmvalue_007_lookup_is_isolated_by_every_storage_key_identity_dimension"
+      }
+    ],
+    "FSMVALUE-009": [
+      {
+        "path": "tests/test_fsm/storage/test_get_value_contract.py",
+        "name": "test_fsmvalue_009_present_and_absent_get_value_reads_do_not_change_fsm_state"
+      }
+    ],
+    "FSMVALUE-010": [
+      {
+        "path": "tests/test_fsm/storage/test_get_value_contract.py",
+        "name": "test_fsmvalue_010_repeated_present_and_absent_get_value_reads_do_not_change_data"
+      }
+    ],
+    "FSMVALUE-011": [
+      {
+        "path": "tests/test_fsm/storage/test_get_value_contract.py",
+        "name": "test_fsmvalue_011_memory_redis_mongo_and_custom_backends_share_accessor_results"
+      }
+    ],
+    "FSMVALUE-012": [
+      {
+        "path": "tests/test_fsm/storage/test_get_value_contract.py",
+        "name": "test_fsmvalue_012_backend_read_exception_remains_observable_without_fallback"
+      },
+      {
+        "path": "tests/test_fsm/storage/test_get_value_contract.py",
+        "name": "test_fsmvalue_012_read_cancellation_remains_observable_without_fallback"
+      }
+    ]
+  },
+  "artifacts": {
+    "tests/test_fsm/storage/test_get_value_contract.py::test_fsmvalue_001_get_value_accepts_storage_key_string_key_and_optional_none_default": [
+      "FSMVALUE-001"
+    ],
+    "tests/test_fsm/storage/test_get_value_contract.py::test_fsmvalue_002_default_get_value_awaits_get_data_with_the_unchanged_storage_key": [
+      "FSMVALUE-002"
+    ],
+    "tests/test_fsm/storage/test_get_value_contract.py::test_fsmvalue_002_storage_subclass_override_is_used_when_get_value_is_awaited": [
+      "FSMVALUE-002"
+    ],
+    "tests/test_fsm/storage/test_get_value_contract.py::test_fsmvalue_004_each_exact_string_key_returns_its_untransformed_supported_value": [
+      "FSMVALUE-004"
+    ],
+    "tests/test_fsm/storage/test_get_value_contract.py::test_fsmvalue_005_absent_key_returns_none_or_the_caller_supplied_default": [
+      "FSMVALUE-005"
+    ],
+    "tests/test_fsm/storage/test_get_value_contract.py::test_fsmvalue_006_present_falsy_or_none_value_wins_over_the_supplied_default": [
+      "FSMVALUE-006"
+    ],
+    "tests/test_fsm/storage/test_get_value_contract.py::test_fsmvalue_007_lookup_is_isolated_by_every_storage_key_identity_dimension": [
+      "FSMVALUE-007"
+    ],
+    "tests/test_fsm/storage/test_get_value_contract.py::test_fsmvalue_009_present_and_absent_get_value_reads_do_not_change_fsm_state": [
+      "FSMVALUE-009"
+    ],
+    "tests/test_fsm/storage/test_get_value_contract.py::test_fsmvalue_010_repeated_present_and_absent_get_value_reads_do_not_change_data": [
+      "FSMVALUE-010"
+    ],
+    "tests/test_fsm/storage/test_get_value_contract.py::test_fsmvalue_011_memory_redis_mongo_and_custom_backends_share_accessor_results": [
+      "FSMVALUE-011"
+    ],
+    "tests/test_fsm/storage/test_get_value_contract.py::test_fsmvalue_012_backend_read_exception_remains_observable_without_fallback": [
+      "FSMVALUE-012"
+    ],
+    "tests/test_fsm/storage/test_get_value_contract.py::test_fsmvalue_012_read_cancellation_remains_observable_without_fallback": [
+      "FSMVALUE-012"
+    ]
+  }
+}
