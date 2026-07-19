@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "requirements": {
+    "FSMVALUE-008": [
+      {
+        "path": "tests/test_fsm/test_scene_get_value_contract.py",
+        "name": "test_fsmvalue_008_scene_wizard_delegates_data_key_with_omitted_none_default_and_returns_context_result"
+      },
+      {
+        "path": "tests/test_fsm/test_scene_get_value_contract.py",
+        "name": "test_fsmvalue_008_scene_wizard_delegates_exact_data_key_and_supplied_default_and_returns_context_result_unchanged"
+      }
+    ],
+    "FSMVALUE-009": [
+      {
+        "path": "tests/test_fsm/test_scene_get_value_contract.py",
+        "name": "test_fsmvalue_009_scene_wizard_get_value_once_or_repeatedly_for_present_or_absent_keys_preserves_fsm_state"
+      }
+    ],
+    "FSMVALUE-010": [
+      {
+        "path": "tests/test_fsm/test_scene_get_value_contract.py",
+        "name": "test_fsmvalue_010_scene_wizard_get_value_once_or_repeatedly_for_present_or_absent_keys_preserves_complete_data"
+      }
+    ],
+    "FSMVALUE-012": [
+      {
+        "path": "tests/test_fsm/test_scene_get_value_contract.py",
+        "name": "test_fsmvalue_012_scene_wizard_get_value_propagates_storage_read_exception_to_scene_caller"
+      },
+      {
+        "path": "tests/test_fsm/test_scene_get_value_contract.py",
+        "name": "test_fsmvalue_012_scene_wizard_get_value_propagates_storage_read_cancellation_to_scene_caller"
+      }
+    ]
+  },
+  "artifacts": {
+    "tests/test_fsm/test_scene_get_value_contract.py::test_fsmvalue_008_scene_wizard_delegates_data_key_with_omitted_none_default_and_returns_context_result": [
+      "FSMVALUE-008"
+    ],
+    "tests/test_fsm/test_scene_get_value_contract.py::test_fsmvalue_008_scene_wizard_delegates_exact_data_key_and_supplied_default_and_returns_context_result_unchanged": [
+      "FSMVALUE-008"
+    ],
+    "tests/test_fsm/test_scene_get_value_contract.py::test_fsmvalue_009_scene_wizard_get_value_once_or_repeatedly_for_present_or_absent_keys_preserves_fsm_state": [
+      "FSMVALUE-009"
+    ],
+    "tests/test_fsm/test_scene_get_value_contract.py::test_fsmvalue_010_scene_wizard_get_value_once_or_repeatedly_for_present_or_absent_keys_preserves_complete_data": [
+      "FSMVALUE-010"
+    ],
+    "tests/test_fsm/test_scene_get_value_contract.py::test_fsmvalue_012_scene_wizard_get_value_propagates_storage_read_cancellation_to_scene_caller": [
+      "FSMVALUE-012"
+    ],
+    "tests/test_fsm/test_scene_get_value_contract.py::test_fsmvalue_012_scene_wizard_get_value_propagates_storage_read_exception_to_scene_caller": [
+      "FSMVALUE-012"
+    ]
+  }
+}
