@@ -572,6 +572,16 @@ class SceneWizard:
         """
         return await self.state.get_data()
 
+    async def get_value(self, data_key: str, default: Optional[Any] = None) -> Optional[Any]:
+        """
+        This method returns a value stored in the current state.
+
+        :param data_key: The key of the value to retrieve.
+        :param default: The value returned when the key is not present.
+        :return: The stored value or the supplied default.
+        """
+        return await self.state.get_value(data_key=data_key, default=default)
+
     async def update_data(
         self, data: Optional[Dict[str, Any]] = None, **kwargs: Any
     ) -> Dict[str, Any]:
