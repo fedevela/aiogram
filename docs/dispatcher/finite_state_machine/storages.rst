@@ -374,3 +374,119 @@ Implementation should proceed in this dependency order:
    backend fixtures.
 3. Validate the focused contract, existing storage and key-builder tests, type checking,
    formatting, and documentation.  No data migration or staged deployment is required.
+
+
+FSM context single-value delegation procedural contract
+=======================================================
+
+The context accessor is a transparent asynchronous boundary over the storage accessor
+defined above.  This procedure records the context-owned logic only; value selection,
+backend access, and physical identity encoding remain owned by ``BaseStorage.get_value``,
+``get_data``, and the configured backend.
+
+Requirement-to-logic traceability
+---------------------------------
+
+All context-level obligations map to ``FSM_CONTEXT_GET_VALUE``:
+
+* ``FSMVALUE-003`` —
+  ``test_fsmvalue_003_context_delegates_complete_unchanged_key_name_and_omitted_none_default``
+  and
+  ``test_fsmvalue_003_context_delegates_supplied_default_and_returns_storage_result``
+* ``FSMVALUE-007`` —
+  ``test_fsmvalue_007_context_lookup_is_isolated_by_every_storage_key_identity_dimension``
+* ``FSMVALUE-009`` —
+  ``test_fsmvalue_009_context_get_value_does_not_change_established_fsm_state``
+* ``FSMVALUE-010`` —
+  ``test_fsmvalue_010_repeated_context_get_value_calls_do_not_change_complete_stored_data``
+* ``FSMVALUE-012`` —
+  ``test_fsmvalue_012_context_get_value_propagates_storage_read_exception_to_caller`` and
+  ``test_fsmvalue_012_context_get_value_propagates_storage_read_cancellation_to_caller``
+
+Context accessor delegation
+---------------------------
+
+.. code-block:: text
+
+    PROCEDURE FSM_CONTEXT_GET_VALUE(context, data_key, default = None)
+      REQUIREMENT_IDS: FSMVALUE-003, FSMVALUE-007, FSMVALUE-009, FSMVALUE-010,
+        FSMVALUE-012
+      VERIFICATION:
+        test_fsmvalue_003_context_delegates_complete_unchanged_key_name_and_omitted_none_default
+        test_fsmvalue_003_context_delegates_supplied_default_and_returns_storage_result
+        test_fsmvalue_007_context_lookup_is_isolated_by_every_storage_key_identity_dimension
+        test_fsmvalue_009_context_get_value_does_not_change_established_fsm_state
+        test_fsmvalue_010_repeated_context_get_value_calls_do_not_change_complete_stored_data
+        test_fsmvalue_012_context_get_value_propagates_storage_read_exception_to_caller
+        test_fsmvalue_012_context_get_value_propagates_storage_read_cancellation_to_caller
+
+      PRECONDITIONS
+        context.storage is the BaseStorage configured for this FSMContext
+        context.key is the context's complete immutable StorageKey
+        context.key retains bot_id, chat_id, user_id, thread_id,
+          business_connection_id, and destiny
+        data_key is the exact caller-supplied data key
+
+      RESOLVE DEFAULT
+        IF the caller omitted default
+          delegated_default := None
+        ELSE
+          delegated_default := the exact caller-supplied default
+        END IF
+
+      DELEGATE / AWAIT / RETURN
+        AWAIT context.storage.get_value(
+          key = context.key,
+          dict_key = data_key,
+          default = delegated_default,
+        ) exactly once
+        RETURN the storage result directly to the caller
+
+      IDENTITY / DATA FLOW INVARIANTS
+        FORWARD context.key as the same complete StorageKey value
+        DO NOT reconstruct, normalize, copy, or omit any StorageKey dimension
+        DO NOT normalize or transform data_key or delegated_default
+        DO NOT inspect, copy, coerce, cache, or replace the storage result
+
+      STATE / MUTATION INVARIANTS
+        DO NOT call context.get_state, context.set_state, context.set_data,
+          context.update_data, or context.clear
+        DO NOT call any storage mutation operation
+        DO NOT mutate context.storage, context.key, FSM state, or stored FSM data
+        Successful completion causes no state transition and emits no event
+        Repeated invocation performs one new independent delegation per call and retains
+          the same no-transition and no-mutation guarantees
+
+      ORDERING / CONCURRENCY
+        Begin no context-owned transaction, lock, retry, or background work
+        Suspend only while awaiting the configured storage accessor
+        Use the configured storage's existing read consistency and completion behavior
+
+      ON FAILURE from storage.get_value, including read exception or cancellation
+        DO NOT return delegated_default or any other successful result
+        DO NOT catch, retry, compensate, translate, wrap, or suppress the failure
+        PROPAGATE the same failure to the context caller
+    END PROCEDURE
+
+Owning boundary and implementation sequence
+-------------------------------------------
+
+``aiogram/fsm/context.py`` owns ``FSM_CONTEXT_GET_VALUE`` because ``FSMContext`` already
+owns transparent delegation of state and data operations through its configured
+``storage`` and ``key`` attributes.  The implementation is one asynchronous method whose
+body is one awaited return expression forwarding ``key=self.key``, the exact data key, and
+the resolved default to ``self.storage.get_value``.  It introduces no validation branch,
+fallback handling, backend selection, persistence operation, or failure boundary.
+
+``aiogram/fsm/storage/base.py`` remains the outgoing contract.  Normal virtual dispatch
+selects the configured storage's inherited or overridden ``get_value`` implementation;
+the context neither bypasses that method through ``get_data`` nor duplicates its mapping
+lookup.  The existing Memory, Redis, Mongo, and custom storage paths therefore retain
+their established identity, serialization, isolation, and error behavior.
+
+``tests/test_fsm/test_context_get_value_contract.py`` owns the seven named context-level
+verification obligations, while
+``tests/test_fsm/fsmcontext_get_value_verification_map.json`` preserves their
+bidirectional requirement mapping.  Implementation follows one dependency step: add the
+transparent method to ``FSMContext`` without changing ``BaseStorage``, concrete backends,
+middleware context construction, schemas, migrations, queues, or runtime configuration.
