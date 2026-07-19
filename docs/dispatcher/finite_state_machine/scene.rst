@@ -325,6 +325,159 @@ bidirectional mapping to ``FSMVALUE-008``, ``FSMVALUE-009``, ``FSMVALUE-010``, a
 ``SceneWizard``; no storage, context, scene-construction, or configuration change is
 required.
 
+SceneWizard single-value lookup architecture record
+===================================================
+
+This record assigns every ``SCENE_WIZARD_GET_VALUE`` obligation to the existing scene,
+context, and storage boundaries.  The architectural delta is one scene-facing method;
+the established FSM identity, persistence, lifecycle, and backend substitution boundaries
+remain unchanged.
+
+Architecture traceability map
+-----------------------------
+
+* ``FSMVALUE-008``,
+  ``test_fsmvalue_008_scene_wizard_delegates_data_key_with_omitted_none_default_and_returns_context_result``,
+  and
+  ``test_fsmvalue_008_scene_wizard_delegates_exact_data_key_and_supplied_default_and_returns_context_result_unchanged``
+  map ``SCENE_WIZARD_GET_VALUE`` to a new concrete asynchronous
+  ``SceneWizard.get_value`` method in ``aiogram/fsm/scene.py`` and its existing outgoing
+  ``FSMContext.get_value`` contract in ``aiogram/fsm/context.py``.
+* ``FSMVALUE-009`` and
+  ``test_fsmvalue_009_scene_wizard_get_value_once_or_repeatedly_for_present_or_absent_keys_preserves_fsm_state``
+  map the procedure to the read-only wizard-to-context seam.  The method has no dependency
+  on scene transition methods, ``ScenesManager``, ``HistoryManager``, or the FSM state
+  mutation ports.
+* ``FSMVALUE-010`` and
+  ``test_fsmvalue_010_scene_wizard_get_value_once_or_repeatedly_for_present_or_absent_keys_preserves_complete_data``
+  map the procedure to one independent ``FSMContext.get_value`` delegation per call.  The
+  wizard does not request the complete data mapping and cannot mutate storage-owned data.
+* ``FSMVALUE-012``,
+  ``test_fsmvalue_012_scene_wizard_get_value_propagates_storage_read_exception_to_scene_caller``,
+  and
+  ``test_fsmvalue_012_scene_wizard_get_value_propagates_storage_read_cancellation_to_scene_caller``
+  map the procedure to an unguarded await.  ``SceneWizard`` adds no exception, cancellation,
+  fallback, retry, translation, logging, or compensation boundary.
+
+Placement and ownership
+-----------------------
+
+``aiogram/fsm/scene.py`` — scene facade owner
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* **Requirements:** ``FSMVALUE-008``, ``FSMVALUE-009``, ``FSMVALUE-010``, and
+  ``FSMVALUE-012``.
+* **Procedure:** ``SCENE_WIZARD_GET_VALUE``.
+* **Responsibility:** expose ``get_value(data_key, default=None)`` beside
+  ``SceneWizard.get_data``, ``set_data``, ``update_data``, and ``clear_data``.  Its entire
+  authority is to await ``self.state.get_value(data_key=data_key, default=default)`` and
+  return that result unchanged.
+* **Owned state:** none.  The constructor-supplied ``state`` reference identifies the FSM
+  context for the active scene; the accessor neither replaces that reference nor owns the
+  state and data behind it.
+* **Incoming dependencies:** scene handlers and other consumers of the public
+  ``SceneWizard`` API.  Callers remain insulated from storage keys and configured storage
+  implementations.
+* **Outgoing dependency:** only the existing ``FSMContext.get_value`` method.  Calling
+  ``FSMContext.get_data`` or ``BaseStorage`` directly would duplicate value/default
+  selection or bypass the context boundary.
+* **Compatibility:** the method is additive.  It changes no constructor, scene protocol,
+  exported symbol, lifecycle hook, action registration, configuration, or generated
+  boundary.
+
+``aiogram/fsm/context.py`` — bound identity and delegation boundary
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* **Requirements:** all four requirements after the call leaves the scene facade.
+* **Procedures:** ``SCENE_WIZARD_GET_VALUE`` delegates into the existing
+  ``FSM_CONTEXT_GET_VALUE`` procedure.
+* **Responsibility:** retain ownership of the complete ``StorageKey`` binding and forward
+  it with the exact data key and default to ``BaseStorage.get_value``.  The wizard neither
+  sees nor reconstructs storage identity.
+* **Incoming dependency:** ``SceneWizard`` depends on the concrete public ``FSMContext``
+  API already supplied at construction.
+* **Outgoing dependency:** the context continues to depend only on the abstract
+  ``BaseStorage.get_value`` contract, preserving custom-storage substitution.
+* **Crossing contract:** the exact data key and default enter from the wizard; the context
+  adds its complete key; the storage result or failure returns through the same awaited
+  call chain without transformation.
+
+``aiogram/fsm/storage/base.py`` and concrete storages — data and read-semantics owners
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* **Requirements:** ``FSMVALUE-009`` and ``FSMVALUE-010`` bind the read-only behavior;
+  ``FSMVALUE-008`` binds value/default selection; ``FSMVALUE-012`` binds failure
+  observability through the downstream seam.
+* **Procedures:** downstream ``FSM_CONTEXT_GET_VALUE``, ``DISPATCH_GET_VALUE``, and
+  ``BASE_STORAGE_GET_VALUE`` behavior; ``SceneWizard`` owns none of these procedures.
+* **Responsibility:** ``BaseStorage.get_value`` owns polymorphic single-value lookup and
+  default selection.  Memory, Redis, Mongo, and custom storages retain record ownership,
+  consistency, identity encoding, serialization, backend I/O, and connection lifecycle.
+* **Dependency direction:** neither ``BaseStorage`` nor any concrete backend depends on
+  ``FSMContext``, ``SceneWizard``, scene management, handlers, or verification artifacts.
+* **Mutation and failure authority:** no mutation port participates.  Backend read,
+  serialization, and cancellation failures propagate upward under existing storage
+  semantics; the scene facade does not reinterpret them.
+
+``ScenesManager`` and ``HistoryManager`` — construction and lifecycle non-participants
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* **Requirements:** ``FSMVALUE-009`` and ``FSMVALUE-010`` establish their exclusion from
+  the lookup execution path.
+* **Procedure:** constructor precondition supply for ``SCENE_WIZARD_GET_VALUE`` only.
+* **Responsibility:** ``ScenesManager`` continues to construct ``SceneWizard`` with its
+  already-bound ``FSMContext``.  Scene entry, exit, actions, history snapshots, rollback,
+  and state transitions retain their existing owners and are not invoked by lookup.
+* **Structural delta:** none.  There is no additional collaborator, lifecycle state,
+  history record, event, queue, job, or configuration value.
+
+Boundaries, flow, and failure ownership
+---------------------------------------
+
+The public contract added at the scene boundary is
+``async SceneWizard.get_value(data_key: str, default: Optional[Any] = None) -> Optional[Any]``.
+It mirrors ``FSMContext.get_value`` so callers do not need a new type, adapter, schema, or
+protocol.  The synchronous dependency relationship contains asynchronous awaits:
+
+.. code-block:: text
+
+    scene caller
+      -> SceneWizard.get_value(data_key, default)
+      -> FSMContext.get_value(data_key, default)
+      -> BaseStorage.get_value(context.key, data_key, default)
+      -> configured inherited or overridden backend read
+      -> unchanged result, exception, or cancellation
+
+The caller owns invocation and cancellation.  ``SceneWizard`` owns completion only while
+awaiting its context.  ``FSMContext`` owns identity binding, and storage owns the data and
+read consistency.  No layer introduced by this change owns a transaction, lock, cache,
+retry, timeout, compensation, recovery state, publication, subscription, or observability
+event.  Existing event-isolation locking may surround the handler lifecycle in middleware,
+but the accessor neither acquires nor releases that lock.
+
+Validation seam and implementation sequence
+-------------------------------------------
+
+``tests/test_fsm/test_scene_get_value_contract.py`` owns all six focused scene-boundary
+verification obligations.  Its delegation collaborator observes exact argument and result
+identity; its storage-backed cases observe state and complete-data snapshots; its failing
+collaborators observe unchanged exception and cancellation propagation.
+``tests/test_fsm/scene_get_value_verification_map.json`` remains the bidirectional
+requirement-to-verification authority.  Production modules do not depend on either test
+artifact.
+
+Implementation follows the existing dependency graph:
+
+1. Add the one-expression asynchronous ``SceneWizard.get_value`` method beside
+   ``get_data``; do not change context, storage, scene construction, or lifecycle code.
+2. Replace the six focused placeholders with executable delegation, immutability, and
+   failure-propagation cases, reusing existing ``FSMContext`` and ``MemoryStorage`` seams
+   where persistence behavior is required.
+3. Run the focused scene contract plus formatting, typing, and documentation checks.  No
+   schema migration, compatibility adapter, deployment change, or staged rollout is
+   required.
+
+
 Markers
 -------
 
