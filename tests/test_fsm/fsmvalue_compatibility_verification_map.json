@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "requirements": {
+    "FSMVALUE-013": [
+      {
+        "path": "tests/test_fsm/test_fsmvalue_compatibility_contract.py",
+        "name": "test_fsmvalue_013_memory_redis_and_mongo_established_storage_operations_preserve_inputs_results_isolation_and_mutations"
+      },
+      {
+        "path": "tests/test_fsm/test_fsmvalue_compatibility_contract.py",
+        "name": "test_fsmvalue_013_fsm_context_established_state_and_data_workflows_preserve_results_and_mutations"
+      },
+      {
+        "path": "tests/test_fsm/test_fsmvalue_compatibility_contract.py",
+        "name": "test_fsmvalue_013_scene_wizard_established_state_and_data_workflows_preserve_results_and_mutations"
+      },
+      {
+        "path": "tests/test_fsm/test_fsmvalue_compatibility_contract.py",
+        "name": "test_fsmvalue_013_custom_storage_with_only_preexisting_abstract_operations_remains_concrete_and_inherits_default_get_value"
+      }
+    ],
+    "FSMVALUE-014": [
+      {
+        "path": "tests/test_fsm/test_fsmvalue_compatibility_contract.py",
+        "name": "test_fsmvalue_014_cpython_3_9_public_fsm_apis_import_and_get_value_coroutines_await_successfully"
+      },
+      {
+        "path": "tests/test_fsm/test_fsmvalue_compatibility_contract.py",
+        "name": "test_fsmvalue_014_cpython_3_10_public_fsm_apis_import_and_get_value_coroutines_await_successfully"
+      },
+      {
+        "path": "tests/test_fsm/test_fsmvalue_compatibility_contract.py",
+        "name": "test_fsmvalue_014_cpython_3_11_public_fsm_apis_import_and_get_value_coroutines_await_successfully"
+      },
+      {
+        "path": "tests/test_fsm/test_fsmvalue_compatibility_contract.py",
+        "name": "test_fsmvalue_014_cpython_3_12_public_fsm_apis_import_and_get_value_coroutines_await_successfully"
+      },
+      {
+        "path": "tests/test_fsm/test_fsmvalue_compatibility_contract.py",
+        "name": "test_fsmvalue_014_cpython_3_13_public_fsm_apis_import_and_get_value_coroutines_await_successfully"
+      }
+    ]
+  },
+  "artifacts": {
+    "tests/test_fsm/test_fsmvalue_compatibility_contract.py::test_fsmvalue_013_custom_storage_with_only_preexisting_abstract_operations_remains_concrete_and_inherits_default_get_value": [
+      "FSMVALUE-013"
+    ],
+    "tests/test_fsm/test_fsmvalue_compatibility_contract.py::test_fsmvalue_013_fsm_context_established_state_and_data_workflows_preserve_results_and_mutations": [
+      "FSMVALUE-013"
+    ],
+    "tests/test_fsm/test_fsmvalue_compatibility_contract.py::test_fsmvalue_013_memory_redis_and_mongo_established_storage_operations_preserve_inputs_results_isolation_and_mutations": [
+      "FSMVALUE-013"
+    ],
+    "tests/test_fsm/test_fsmvalue_compatibility_contract.py::test_fsmvalue_013_scene_wizard_established_state_and_data_workflows_preserve_results_and_mutations": [
+      "FSMVALUE-013"
+    ],
+    "tests/test_fsm/test_fsmvalue_compatibility_contract.py::test_fsmvalue_014_cpython_3_10_public_fsm_apis_import_and_get_value_coroutines_await_successfully": [
+      "FSMVALUE-014"
+    ],
+    "tests/test_fsm/test_fsmvalue_compatibility_contract.py::test_fsmvalue_014_cpython_3_11_public_fsm_apis_import_and_get_value_coroutines_await_successfully": [
+      "FSMVALUE-014"
+    ],
+    "tests/test_fsm/test_fsmvalue_compatibility_contract.py::test_fsmvalue_014_cpython_3_12_public_fsm_apis_import_and_get_value_coroutines_await_successfully": [
+      "FSMVALUE-014"
+    ],
+    "tests/test_fsm/test_fsmvalue_compatibility_contract.py::test_fsmvalue_014_cpython_3_13_public_fsm_apis_import_and_get_value_coroutines_await_successfully": [
+      "FSMVALUE-014"
+    ],
+    "tests/test_fsm/test_fsmvalue_compatibility_contract.py::test_fsmvalue_014_cpython_3_9_public_fsm_apis_import_and_get_value_coroutines_await_successfully": [
+      "FSMVALUE-014"
+    ]
+  }
+}
